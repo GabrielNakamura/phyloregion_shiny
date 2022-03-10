@@ -16,12 +16,13 @@ sidebar <- dashboardSidebar(
     br(),
     fluidRow(
       column(12,offset = 3,
-             img(src='logo_phylo.png',height= 97.5, width=  114.075, align = "center"))
+             img(src="logo_phylo.png", height= 90.5, width=  114.075, align = "center"))
     ),
     br(),
     menuItem("Introduction", tabName ="Tutorial", icon = icon("home")),
-    menuItem("Upload Data and Classification", tabName ="Upload",icon = icon("upload")),
-    menuItem("Visualize Spatial Patterns", tabName ="Validation",icon = icon("download"))
+    menuItem("Upload Data", tabName ="Upload",icon = icon("upload")),
+    menuItem("Classification", tabName ="Classify",icon = icon("person-digging")),
+    menuItem("Visualize Spatial Patterns", tabName ="Viz",icon = icon("download"))
   )
 )
 
@@ -50,6 +51,15 @@ body <- dashboardBody(
                   radioButtons("file.type", "File type:", 
                                choices = c("csv","txt (not implemented)"))
                   )
+            ),
+            fluidRow(
+              box(width = 4, height = NULL, 
+                  title = "Phylogeny",
+                  status = "success", solidHeader = T, 
+                  fileInput("file.phylo", "Newick file"),
+                  actionButton("ex_phylo", "Phylogeny example")
+                  )
+              )
             )
     ),
     
