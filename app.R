@@ -8,6 +8,7 @@ library(rgdal)
 require(leaflet.extras)
 library(shinyLP)
 library(shinyWidgets)
+library(DT)
 
 header <- dashboardHeader(title = "phyloregion", titleWidth = 230)
 
@@ -53,7 +54,8 @@ body <- dashboardBody(
                   ),
               box(width = 8, height = NULL,
                   title = "Occurence matrix table",
-                  status = "success", solidHeader = T
+                  status = "success", solidHeader = T,
+                  DT::dataTableOutput(outputId = "commDT")
                   )
                   
             ),
@@ -125,10 +127,39 @@ ui <- dashboardPage(header, sidebar, body)
 
 
 server <- function(input, output, session){
+  
+  # map with phyloregions
   output$map <- leaflet::renderLeaflet({
     map <- leaflet() %>% 
       addTiles()
     map
+  })
+  
+  # reactive values to receive data 
+  val <- reactiveValues()
+  values <- reactiveValues()
+  val$df <- data.frame()
+  
+  
+  # Upload species file
+  observeEvent(!is.null(input$file.occ),{
+    req(input$file.occ)
+    
+    val$df <- read.csv(input$file.occ$datapath, 
+                       sep = "\t", encoding = "UTF-8", stringsAsFactors = F)
+    df <- val$df
+    
+    
+  })
+  
+  # Using example of species file
+  observeEvent(input$ex_spp,{
+    
+    
+    val$comm <- read.csv("www/comm_africa.csv", 
+                       sep = "\t", encoding = "UTF-8", stringsAsFactors = F)
+    comm <- val$df
+    output$commDT <- DT::renderDataTable({comm})
   })
      
 }
