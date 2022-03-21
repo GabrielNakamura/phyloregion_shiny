@@ -138,27 +138,25 @@ server <- function(input, output, session){
   # reactive values to receive data 
   val <- reactiveValues()
   values <- reactiveValues()
-  val$df <- data.frame()
+  val$comm <- matrix()
   
   
   # Upload species file
   observeEvent(!is.null(input$file.occ),{
     req(input$file.occ)
     
-    val$df <- read.csv(input$file.occ$datapath, 
-                       sep = "\t", encoding = "UTF-8", stringsAsFactors = F)
-    df <- val$df
-    
-    
+    val$comm <- read.csv(input$file.occ$datapath, 
+                       sep = ",", encoding = "UTF-8", stringsAsFactors = F, header = TRUE)
+    comm <- as.data.frame(val$comm)
+    df <- val$comm
+    output$commDT <- DT::renderDataTable({comm})
   })
   
   # Using example of species file
   observeEvent(input$ex_spp,{
-    
-    
     val$comm <- read.csv("www/comm_africa.csv", 
-                       sep = "\t", encoding = "UTF-8", stringsAsFactors = F)
-    comm <- val$df
+                         sep = ",", encoding = "UTF-8", stringsAsFactors = F, header = TRUE)
+    comm <- as.data.frame(val$comm)
     output$commDT <- DT::renderDataTable({comm})
   })
      
