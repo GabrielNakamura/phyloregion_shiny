@@ -50,7 +50,12 @@ body <- dashboardBody(
                   actionButton("ex_spp", "Use an example"),
                   radioButtons("file.type", "File type:", 
                                choices = c("csv","txt (not implemented)"))
+                  ),
+              box(width = 8, height = NULL,
+                  title = "Occurence matrix table",
+                  status = "success", solidHeader = T
                   )
+                  
             ),
             fluidRow(
               box(width = 4, height = NULL, 
@@ -58,10 +63,19 @@ body <- dashboardBody(
                   status = "success", solidHeader = T, 
                   fileInput("file.phylo", "Newick file"),
                   actionButton("ex_phylo", "Phylogeny example")
+                  ),
+              box(width = 8, height = NULL, 
+                  title = "Phylogeny representation",
+                  status = "success",
+                  solidHeader = T,
+                  fluidRow(column(6,
+                                  radioButtons("phylo_type", "Phylogenetic representation",
+                                               choices = c("circular", "regular"))
+                  )
                   )
               )
-            )
-    ),
+              )
+            ),
     
     tabItem(tabName = "Validation", 
             fluidRow(
@@ -105,6 +119,7 @@ body <- dashboardBody(
     )
   )
 )
+
 
 ui <- dashboardPage(header, sidebar, body)
 
