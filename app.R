@@ -9,6 +9,8 @@ require(leaflet.extras)
 library(shinyLP)
 library(shinyWidgets)
 library(DT)
+library(plotly)
+library(ape)
 
 header <- dashboardHeader(title = "phyloregion", titleWidth = 230)
 
@@ -72,9 +74,10 @@ body <- dashboardBody(
                   solidHeader = T,
                   fluidRow(column(6,
                                   radioButtons("phylo_type", "Phylogenetic representation",
-                                               choices = c("circular", "regular"))
+                                               choices = c("circular", "rectangular"), selected = "rectangular")
                   )
-                  )
+                  ),
+                  plotly::plotlyOutput(outputId = "phylo_plotly")
               )
               )
             ),
@@ -159,6 +162,18 @@ server <- function(input, output, session){
     comm <- as.data.frame(val$comm)
     output$commDT <- DT::renderDataTable({comm})
   })
+  
+  # Using example phylogeny 
+  observeEvent(input$ex_phylo,{
+    values$phylo <- ape::read.tree("www/phylo_africa.txt")
+    phylo <- as.phylo(values$phylo)
+    output$phylo_plotly <- plotly::renderPlotly({
+      height <- session$clientData$output_p_height
+      width <- session$clientData$output_p_width
+      plot_interact(tree = phylo, 
+                    type = input$phylo_type,
+                    tip.label = FALSE, height = height, width = width)})
+  }) 
      
 }
 
