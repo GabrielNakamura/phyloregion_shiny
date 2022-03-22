@@ -163,6 +163,19 @@ server <- function(input, output, session){
     output$commDT <- DT::renderDataTable({comm})
   })
   
+  # Using uploaded file for phylogeny
+  observeEvent(input$file.phylo,{
+    values$phylo <- ape::read.tree(input$file.phylo$datapath)
+    phylo <- as.phylo(values$phylo)
+    output$phylo_plotly <- plotly::renderPlotly({
+      height <- session$clientData$output_p_height
+      width <- session$clientData$output_p_width
+      plot_interact(tree = phylo, 
+                    type = input$phylo_type,
+                    tip.label = FALSE, height = height, width = width)})
+  }) 
+  
+  
   # Using example phylogeny 
   observeEvent(input$ex_phylo,{
     values$phylo <- ape::read.tree("www/phylo_africa.txt")
@@ -174,6 +187,7 @@ server <- function(input, output, session){
                     type = input$phylo_type,
                     tip.label = FALSE, height = height, width = width)})
   }) 
+  
      
 }
 
