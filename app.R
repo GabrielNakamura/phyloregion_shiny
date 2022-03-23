@@ -23,8 +23,9 @@ sidebar <- dashboardSidebar(
     ),
     br(),
     menuItem("Introduction", tabName ="Tutorial", icon = icon("home")),
-    menuItem("Upload Data", tabName ="Upload",icon = icon("upload")),
-    menuItem("Classification", tabName ="Classify",icon = icon("person-digging")),
+    menuItem("Upload species data", tabName ="UploadSpp",icon = icon("upload")),
+    menuItem("Upload spatial data", tabName ="UploadSpace",icon = icon("upload")),
+    menuItem("Regionalization", tabName ="Classify",icon = icon("person-digging")),
     menuItem("Visualize Spatial Patterns", tabName ="Viz",icon = icon("download"))
   )
 )
@@ -44,7 +45,7 @@ body <- dashboardBody(
             
     )
     ),
-    tabItem(tabName = "Upload", 
+    tabItem(tabName = "UploadSpp", 
             fluidRow(
               box(width = 4, height = NULL, 
                   title = "Occurrence matrix",
@@ -82,7 +83,28 @@ body <- dashboardBody(
               )
             ),
     
-    tabItem(tabName = "Validation", 
+    tabItem(tabName = "UploadSpace", 
+            fluidRow(
+              box(width = 4, height = NULL, 
+                  title = "Spatial Data",
+                  status = "success", solidHeader = T, 
+                  fileInput("file.shp", "Shapefile"),
+                  actionButton("ex_shp", "Use a shapefile example"),
+                  radioButtons("file.type", "File type:", 
+                               choices = c(".shp","txt (not implemented)"), selected = ".shp")
+              ),
+              box(width = 8, height = NULL,
+                  title = "Spatial Taxonomic Patterns",
+                  radioButtons("tax.pattern.type", "Taxonomic pattern:", 
+                               choices = c("Richness", "Weighted Endemism"), selected = "Richness"),
+                  plotOutput(outputId = "map_res")
+                  
+              )
+              
+            )
+    ),
+    
+    tabItem(tabName = "Classify", 
             fluidRow(
               column(3,
                      box(width = NULL,
@@ -99,6 +121,46 @@ body <- dashboardBody(
                                         "WPE", 
                                         "EDGE"
                                         ),
+                           width = "100%"
+                         ),
+                         materialSwitch("del_mkr_button", 
+                                        label = "Delete points with click", 
+                                        status = "danger")
+                         
+                         
+                     ),
+                     box(width = NULL, title = "Download",
+                         solidHeader = T, status = "success",
+                         
+                         
+                         textOutput("sel_display"),
+                         downloadButton("download_grid_filter.csv","Download from grid filter"),br(),br(),
+                         textOutput("down.class.text"),
+                         downloadButton("download_classified.csv","Download from classifier")
+                     )
+              ),
+              column(9,
+                     leafletOutput("map", height = 500)
+              )
+            )
+    ),
+    tabItem(tabName = "Viz", 
+            fluidRow(
+              column(3,
+                     box(width = NULL,
+                         checkboxGroupButtons(
+                           inputId = "grbox", label = "What metrics should be shown in the map", 
+                           choices = c("Phylo Diversity" = "PD",
+                                       "Phylo Endemism" = "PE",
+                                       "Weighted Endemism" = "WPE",
+                                       "EDGE" = "EDGE"),
+                           justified = T, status = 'info', size = "xs", direction = "vertical",
+                           checkIcon = list(yes = icon("ok", lib = "glyphicon"), no = icon("remove", lib = "glyphicon")),
+                           selected = c("PD",
+                                        "PE", 
+                                        "WPE", 
+                                        "EDGE"
+                           ),
                            width = "100%"
                          ),
                          materialSwitch("del_mkr_button", 
@@ -141,6 +203,7 @@ server <- function(input, output, session){
   # reactive values to receive data 
   val <- reactiveValues()
   values <- reactiveValues()
+  valuesMap <- reactiveValues()
   val$comm <- matrix()
   
   
@@ -186,7 +249,17 @@ server <- function(input, output, session){
       plot_interact(tree = phylo, 
                     type = input$phylo_type,
                     tip.label = FALSE, height = height, width = width)})
-  }) 
+  })
+  
+  # Uploading spatial data
+  observeEvent(input$ex_shp,{
+    valuesMap$map <- rgdal::readOGR(dsn = "www/africa.shp")
+    map <- valuesMap$map
+    output$map_res <- renderPlot({
+      plot(map)
+    })
+  })
+
   
      
 }
