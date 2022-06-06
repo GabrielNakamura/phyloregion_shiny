@@ -53,7 +53,7 @@ body <- dashboardBody(
                   fileInput("file.occ", "Occurrence matrix"),
                   actionButton("ex_spp", "Use an example"),
                   radioButtons("file.type", "File type:", 
-                               choices = c("csv","txt (not implemented)"))
+                               choices = c("csv","txt (not implemented)"), selected = "csv")
                   ),
               box(width = 8, height = NULL,
                   title = "Occurence matrix table",
@@ -204,7 +204,7 @@ server <- function(input, output, session){
   val <- reactiveValues()
   values <- reactiveValues()
   valuesMap <- reactiveValues()
-  val$comm <- matrix()
+  
   
   
   # Upload species file
@@ -216,25 +216,29 @@ server <- function(input, output, session){
     comm <- as.data.frame(val$comm)
     df <- val$comm
     output$commDT <- DT::renderDataTable({comm})
+   
   })
   
   # Using example of species file
   observeEvent(input$ex_spp,{
     val$comm <- read.csv("www/comm_africa.csv", 
                          sep = ",", encoding = "UTF-8", stringsAsFactors = F, header = TRUE)
-    comm <- as.data.frame(val$comm)
-    output$commDT <- DT::renderDataTable({comm})
+    
+    output$commDT <- DT::renderDataTable({val$comm})
   })
   
   # Using uploaded file for phylogeny
   observeEvent(input$file.phylo,{
     values$phylo <- ape::read.tree(input$file.phylo$datapath)
     phylo <- as.phylo(values$phylo)
+    type_phylo <- reactive({
+      input$phylo_type
+    })
     output$phylo_plotly <- plotly::renderPlotly({
       height <- session$clientData$output_p_height
       width <- session$clientData$output_p_width
       plot_interact(tree = phylo, 
-                    type = input$phylo_type,
+                    type = type_phylo(),
                     tip.label = FALSE, height = height, width = width)})
   }) 
   
@@ -255,8 +259,14 @@ server <- function(input, output, session){
   observeEvent(input$ex_shp,{
     valuesMap$map <- rgdal::readOGR(dsn = "www/africa.shp")
     map <- valuesMap$map
-    output$map_res <- renderPlot({
-      plot(map)
+    output$map_res <- renderLeaflet({
+      space_reproj <- 
+        map %>% 
+        st_as_sf() %>% 
+        st_transform(crs = "+init=epsg:4326")
+      leaflet() %>%
+        addTiles() %>% 
+        addPolygons(data = space_reproj, weight = 2, fillColor = "green", popup = TRUE)
     })
   })
 
