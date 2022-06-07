@@ -5,13 +5,13 @@ date: "2/25/2022"
 output: html_document
 ---
 
-### An introduction to phyloregion R package
+### An introduction to shiny phyloregion app
 
 # phyloregion <img src='www/logo_phylo.png' align="right" width="120" />
 
 An R package for biogeographic regionalization (the classification of geographical areas in terms of their biotas) and macroecology. With macroecological datasets of ever increasing size and complexity, `phyloregion` offers the possibility of handling and executing very large scale analysis of biogeographic regionalization. It also allows fast and memory efficient analysis of standard conservation measures such as phylogenetic diversity, phylogenetic endemism, evolutionary distinctiveness and global endangerment. `phyloregion` can run on any operating system (Mac, Linux, Windows or even high performance computing cluster) with `R` 3.6.0 (or higher) installed.
 
-
+<img src='www/examples.png' align="centre" height="200" />
 
 ### How to cite
 The original implementation of ```phyloregion``` is described in:
