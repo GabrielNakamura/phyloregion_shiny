@@ -1,8 +1,9 @@
 #### phyloregion shiny app
+source("functions.R")
 library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
-library(leaflet)
+library(ggtree)
 library(raster)
 library(rgdal)
 require(leaflet.extras)
