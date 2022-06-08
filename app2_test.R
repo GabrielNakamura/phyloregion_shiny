@@ -1,4 +1,5 @@
 #### phyloregion shiny app
+source("functions.R")
 library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
@@ -56,7 +57,6 @@ body <- dashboardBody(
                   status = "success", solidHeader = T,
                   
                   DT::DTOutput(outputId = "commDT"),
-                  verbatimTextOutput("verbatimDT"),
                   downloadButton("download_comm_data.csv","Download occurrence data table"),br(),br()
               )
             ),
@@ -176,7 +176,6 @@ server <- function(input, output, session){
                          sep = ",", encoding = "UTF-8", stringsAsFactors = F, header = TRUE)
     comm <- val$comm 
     output$commDT <- DT::renderDT({comm})
-    output$verbatimDT <- renderPrint(DT::renderDT({comm}))
   })
   
   # Using uploaded file for phylogeny
