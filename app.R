@@ -11,7 +11,9 @@ library(shinyLP)
 library(shinyWidgets)
 library(DT)
 library(plotly)
+library(phyloregion)
 library(ape)
+library(rgdal)
 
 header <- dashboardHeader(title = "Shiny phyloregion", titleWidth = 230)
 
@@ -92,22 +94,35 @@ body <- dashboardBody(
               column(3,
                      box(width = NULL, title = "Classification",
                          solidHeader = T, status = "success",
-                         textOutput("sel_display"),
                          radioButtons(inputId = "classification_type",
                                       label = "Classification type",
                                       choices = c("Taxonomic", "Phylogenetic", "Functional"),
-                                      selected = "Phylogenetic")
+                                      selected = character(0))
                      ),
                      box(width = NULL, title = "Download",
                          solidHeader = T, status = "success",
-                         textOutput("sel_display"),
                          downloadButton("download_map_phylo.ras", "Download all figures"),br(),br()
                      )
               ), 
               column(width = 9,
-                     box(width = NULL, title = "Classification result",
-                         solidHeader = T, status = "success"),
-                     column(width = 8, box(width = NULL, title = "Diversity patterns",
+                     column(width = 7, 
+                            box(width = NULL, title = "Classification result",
+                                solidHeader = T, status = "success",
+                                plotOutput("classification_res"),
+                                downloadButton("download_clas_map.png", "Download classification"),
+                                downloadButton("download_map_raw.shp", "Download shapefile")
+                                )
+                            ),
+                     column(width = 5, 
+                            box(width = NULL, title = "Ordination result",
+                                solidHeader = T,
+                                status = "success", plotOutput("NMDS_res"),
+                                plotOutput("NMDS_res"),
+                                downloadButton("download_NMDS_res.png", "Download NMDS"),
+                                downloadButton("download_data_NMDS.csv", "Download NMDS data")
+                                )
+                            ),
+                     column(width = 7, box(width = NULL, title = "Diversity patterns",
                                            solidHeader = T, status = "success",
                                            checkboxGroupButtons(
                                              inputId = "grbox", label = "Choose a metric", 
@@ -130,7 +145,7 @@ body <- dashboardBody(
                                            )
                      )
                      ),
-                     column(width = 4, box(width = NULL, title = "Membership",
+                     column(width = 5, box(width = NULL, title = "Membership",
                                            solidHeader = T, status = "success"))
               )
             )
@@ -154,10 +169,11 @@ server <- function(input, output, session){
   
   # Using example of species file
   observeEvent(input$ex_spp,{
-    val$comm <- read.csv("www/comm_africa.csv", 
+    values$comm <- read.csv("www/comm_africa.csv", 
                          sep = ",", encoding = "UTF-8", stringsAsFactors = F, header = TRUE)
     
-    comm <- val$comm 
+    comm <- values$comm 
+    values$africa_shp <- readOGR(dsn = "example", layer = "test") # shapefile for example
     output$commDT <- DT::renderDT({DT::datatable(comm)})
   })
   
@@ -171,6 +187,39 @@ server <- function(input, output, session){
       plot_interact(tree = phylo, 
                     type = input$phylo_type,
                     tip.label = FALSE, height = height, width = width)}) # doesn't working for circular plots
+  })
+  
+
+# classification ----------------------------------------------------------
+
+  observeEvent(input$classification_type, { # this work just for the example dataset
+    if(input$classification_type == "Phylogenetic"){
+      tree <- values$phylo
+      comm <- values$comm
+      africa_shp <- values$africa_shp
+      rownames(comm) <- comm[, 1]
+      comm <- comm[, - 1]
+      sparse_comm <- dense2sparse(comm)
+      tree <- keep.tip(tree, intersect(tree$tip.label, colnames(sparse_comm)))
+      pb <- phylobeta(sparse_comm, tree)
+      classification <- phyloregion(pb[[1]], shp = africa_shp)
+      output$classification_res <- 
+        renderPlot({
+          plot(classification, palette="NMDS")
+        }) 
+      output$NMDS_res <-
+        renderPlot({
+          plot_NMDS(classification, cex = 3)
+          text(classification)
+        })
+    }
+    
+    if(input$classification_type == "Taxonomic"){
+      output$classification_res <- 
+      renderText({
+        print("not implemented yet")
+      })
+    }
   })
   
 }
