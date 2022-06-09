@@ -24,8 +24,8 @@ sidebar <- dashboardSidebar(
     ),
     br(),
     menuItem("Introduction", tabName ="Tutorial", icon = icon("home")),
-    menuItem("Upload species data", tabName ="UploadSpp",icon = icon("upload")),
-    menuItem("Analyses and Visualization", tabName = "Classify")
+    menuItem("Upload species data", tabName ="UploadSpp", icon = icon("upload")),
+    menuItem("Analyses and Visualization", tabName = "Classify", icon = icon("gear"))
   )
 )
 
@@ -41,6 +41,10 @@ body <- dashboardBody(
                 ),
             )
     ),
+    
+
+    # updload data tab ---------------------------------------------------------
+
     tabItem(tabName = "UploadSpp", 
             fluidRow(
               box(width = 4, height = NULL, 
@@ -73,15 +77,69 @@ body <- dashboardBody(
                   solidHeader = T,
                   fluidRow(column(6,
                                   radioButtons("phylo_type", "Phylogeny",
-                                               choices = c("circular", "rectangular"), selected = "rectangular")
+                                               choices = c("rectangular", "dendrogram", "fan"), selected = "rectangular")
                   )
                   ),
                   plotly::plotlyOutput(outputId = "phylo_plotly")
               )
             )
+    ),
+    
+    # classification and analysis tab -----------------------------------------
+    
+    tabItem(tabName = "Classify", 
+            fluidRow(
+              column(3,
+                     box(width = NULL, title = "Classification",
+                         solidHeader = T, status = "success",
+                         textOutput("sel_display"),
+                         radioButtons(inputId = "classification_type",
+                                      label = "Classification type",
+                                      choices = c("Taxonomic", "Phylogenetic", "Functional"),
+                                      selected = "Phylogenetic")
+                     ),
+                     box(width = NULL, title = "Download",
+                         solidHeader = T, status = "success",
+                         textOutput("sel_display"),
+                         downloadButton("download_map_phylo.ras", "Download all figures"),br(),br()
+                     )
+              ), 
+              column(width = 9,
+                     box(width = NULL, title = "Classification result",
+                         solidHeader = T, status = "success"),
+                     column(width = 8, box(width = NULL, title = "Diversity patterns",
+                                           solidHeader = T, status = "success",
+                                           checkboxGroupButtons(
+                                             inputId = "grbox", label = "Choose a metric", 
+                                             choices = c("Phylo Diversity" = "PD",
+                                                         "Phylo Endemism" = "PE",
+                                                         "Weighted Endemism" = "WPE",
+                                                         "EDGE" = "EDGE"),
+                                             justified = T, status = 'info', size = "xs", direction = "vertical",
+                                             checkIcon = list(yes = icon("ok", lib = "glyphicon"), no = icon("remove", lib = "glyphicon")),
+                                             selected = c("PE"),
+                                             width = "100%"
+                                           ),
+                                           tabBox(
+                                             side = "right", width = 8,
+                                             selected = "PE",
+                                             tabPanel("PD", "Phylogenetic diversity"),
+                                             tabPanel("PE", "Phylogenetic endemism"),
+                                             tabPanel("WE", "Weighted endemism"),
+                                             tabPanel("EDGE", "EDGE")
+                                           )
+                                           )
+                            ),
+                     column(width = 4, box(width = NULL, title = "Membership",
+                                           solidHeader = T, status = "success"))
+              )
+            )
     )
     )
 )
+
+
+
 
 ui <- dashboardPage(header, sidebar, body)
 
@@ -112,7 +170,7 @@ server <- function(input, output, session){
       width <- session$clientData$output_p_width
       plot_interact(tree = phylo, 
                     type = input$phylo_type,
-                    tip.label = FALSE, height = height, width = width)})
+                    tip.label = FALSE, height = height, width = width)}) # doesn't working for circular plots
   })
   
 }

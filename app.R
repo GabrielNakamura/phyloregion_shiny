@@ -1,8 +1,9 @@
 #### phyloregion shiny app
+source("functions.R")
 library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
-library(leaflet)
+library(ggtree)
 library(raster)
 library(rgdal)
 require(leaflet.extras)
@@ -12,21 +13,19 @@ library(DT)
 library(plotly)
 library(ape)
 
-header <- dashboardHeader(title = "phyloregion", titleWidth = 230)
+header <- dashboardHeader(title = "Shiny phyloregion", titleWidth = 230)
 
 sidebar <- dashboardSidebar(
   sidebarMenu(
     br(),
     fluidRow(
       column(12,offset = 3,
-             img(src="logo_phylo.png", height= 90.5, width=  114.075, align = "center"))
+             img(src="www/logo_phylo.png", height= 97.5, width=  114.075, align = "center"))
     ),
     br(),
     menuItem("Introduction", tabName ="Tutorial", icon = icon("home")),
-    menuItem("Upload species data", tabName ="UploadSpp",icon = icon("upload")),
-    menuItem("Upload spatial data", tabName ="UploadSpace",icon = icon("upload")),
-    menuItem("Regionalization", tabName ="Classify",icon = icon("person-digging")),
-    menuItem("Visualize Spatial Patterns", tabName ="Viz",icon = icon("download"))
+    menuItem("Upload species data", tabName ="UploadSpp", icon = icon("upload")),
+    menuItem("Analyses and Visualization", tabName = "Classify", icon = icon("gear"))
   )
 )
 
@@ -40,27 +39,30 @@ body <- dashboardBody(
                          imageOutput('tbl')
                   )
                 ),
-                
-                
-            
-    )
+            )
     ),
+    
+    
+    # updload data tab ---------------------------------------------------------
+    
     tabItem(tabName = "UploadSpp", 
             fluidRow(
               box(width = 4, height = NULL, 
-                  title = "Occurrence matrix",
+                  title = "Occurrence data",
                   status = "success", solidHeader = T, 
-                  fileInput("file.occ", "Occurrence matrix"),
-                  actionButton("ex_spp", "Use an example"),
+                  fileInput("file.occ", "Occurrence data"),
                   radioButtons("file.type", "File type:", 
-                               choices = c("csv","txt (not implemented)"), selected = "csv")
-                  ),
+                               choices = c("Points", "Polygons", "Raster"), selected = "Points"),
+                  numericInput("res", "Resolution:", 1),
+                  actionButton("ex_spp", "Use an example")
+              ),
               box(width = 8, height = NULL,
                   title = "Occurence matrix table",
                   status = "success", solidHeader = T,
-                  DT::dataTableOutput(outputId = "commDT")
-                  )
                   
+                  DT::DTOutput(outputId = "commDT"),
+                  downloadButton("download_comm_data.csv","Download occurrence data table"),br(),br()
+              )
             ),
             fluidRow(
               box(width = 4, height = NULL, 
@@ -68,119 +70,68 @@ body <- dashboardBody(
                   status = "success", solidHeader = T, 
                   fileInput("file.phylo", "Newick file"),
                   actionButton("ex_phylo", "Phylogeny example")
-                  ),
+              ),
               box(width = 8, height = NULL, 
-                  title = "Phylogeny representation",
+                  title = "Phylogenetic tree",
                   status = "success",
                   solidHeader = T,
                   fluidRow(column(6,
-                                  radioButtons("phylo_type", "Phylogenetic representation",
-                                               choices = c("circular", "rectangular"), selected = "rectangular")
+                                  radioButtons("phylo_type", "Phylogeny",
+                                               choices = c("rectangular", "dendrogram", "fan"), selected = "rectangular")
                   )
                   ),
                   plotly::plotlyOutput(outputId = "phylo_plotly")
               )
-              )
-            ),
-    
-    tabItem(tabName = "UploadSpace", 
-            fluidRow(
-              box(width = 4, height = NULL, 
-                  title = "Spatial Data",
-                  status = "success", solidHeader = T, 
-                  fileInput("file.shp", "Shapefile"),
-                  actionButton("ex_shp", "Use a shapefile example"),
-                  radioButtons("file.type", "File type:", 
-                               choices = c(".shp","txt (not implemented)"), selected = ".shp")
-              ),
-              box(width = 8, height = NULL,
-                  title = "Spatial Taxonomic Patterns",
-                  radioButtons("tax.pattern.type", "Taxonomic pattern:", 
-                               choices = c("Richness", "Weighted Endemism"), selected = "Richness"),
-                  plotOutput(outputId = "map_res")
-                  
-              )
-              
             )
     ),
+    
+    # classification and analysis tab -----------------------------------------
     
     tabItem(tabName = "Classify", 
             fluidRow(
               column(3,
-                     box(width = NULL,
-                         checkboxGroupButtons(
-                           inputId = "grbox", label = "What metrics should be shown in the map", 
-                           choices = c("Phylo Diversity" = "PD",
-                                       "Phylo Endemism" = "PE",
-                                       "Weighted Endemism" = "WPE",
-                                       "EDGE" = "EDGE"),
-                           justified = T, status = 'info', size = "xs", direction = "vertical",
-                           checkIcon = list(yes = icon("ok", lib = "glyphicon"), no = icon("remove", lib = "glyphicon")),
-                           selected = c("PD",
-                                        "PE", 
-                                        "WPE", 
-                                        "EDGE"
-                                        ),
-                           width = "100%"
-                         ),
-                         materialSwitch("del_mkr_button", 
-                                        label = "Delete points with click", 
-                                        status = "danger")
-                         
-                         
+                     box(width = NULL, title = "Classification",
+                         solidHeader = T, status = "success",
+                         textOutput("sel_display"),
+                         radioButtons(inputId = "classification_type",
+                                      label = "Classification type",
+                                      choices = c("Taxonomic", "Phylogenetic", "Functional"),
+                                      selected = "Phylogenetic")
                      ),
                      box(width = NULL, title = "Download",
                          solidHeader = T, status = "success",
-                         
-                         
                          textOutput("sel_display"),
-                         downloadButton("download_grid_filter.csv","Download from grid filter"),br(),br(),
-                         textOutput("down.class.text"),
-                         downloadButton("download_classified.csv","Download from classifier")
+                         downloadButton("download_map_phylo.ras", "Download all figures"),br(),br()
                      )
-              ),
-              column(9,
-                     leafletOutput("map", height = 500)
-              )
-            )
-    ),
-    tabItem(tabName = "Viz", 
-            fluidRow(
-              column(3,
-                     box(width = NULL,
-                         checkboxGroupButtons(
-                           inputId = "grbox", label = "What metrics should be shown in the map", 
-                           choices = c("Phylo Diversity" = "PD",
-                                       "Phylo Endemism" = "PE",
-                                       "Weighted Endemism" = "WPE",
-                                       "EDGE" = "EDGE"),
-                           justified = T, status = 'info', size = "xs", direction = "vertical",
-                           checkIcon = list(yes = icon("ok", lib = "glyphicon"), no = icon("remove", lib = "glyphicon")),
-                           selected = c("PD",
-                                        "PE", 
-                                        "WPE", 
-                                        "EDGE"
-                           ),
-                           width = "100%"
-                         ),
-                         materialSwitch("del_mkr_button", 
-                                        label = "Delete points with click", 
-                                        status = "danger")
-                         
-                         
+              ), 
+              column(width = 9,
+                     box(width = NULL, title = "Classification result",
+                         solidHeader = T, status = "success"),
+                     column(width = 8, box(width = NULL, title = "Diversity patterns",
+                                           solidHeader = T, status = "success",
+                                           checkboxGroupButtons(
+                                             inputId = "grbox", label = "Choose a metric", 
+                                             choices = c("Phylo Diversity" = "PD",
+                                                         "Phylo Endemism" = "PE",
+                                                         "Weighted Endemism" = "WPE",
+                                                         "EDGE" = "EDGE"),
+                                             justified = T, status = 'info', size = "xs", direction = "vertical",
+                                             checkIcon = list(yes = icon("ok", lib = "glyphicon"), no = icon("remove", lib = "glyphicon")),
+                                             selected = c("PE"),
+                                             width = "100%"
+                                           ),
+                                           tabBox(
+                                             side = "right", width = 8,
+                                             selected = "PE",
+                                             tabPanel("PD", "Phylogenetic diversity"),
+                                             tabPanel("PE", "Phylogenetic endemism"),
+                                             tabPanel("WE", "Weighted endemism"),
+                                             tabPanel("EDGE", "EDGE")
+                                           )
+                     )
                      ),
-                     box(width = NULL, title = "Download",
-                         solidHeader = T, status = "success",
-                         
-                         
-                         textOutput("sel_display"),
-                         downloadButton("download_grid_filter.csv","Download from grid filter"),br(),br(),
-                         textOutput("down.class.text"),
-                         downloadButton("download_classified.csv","Download from classifier")
-                     )
-              ),
-              column(9,
-                     leafletOutput("map", height = 500)
+                     column(width = 4, box(width = NULL, title = "Membership",
+                                           solidHeader = T, status = "success"))
               )
             )
     )
@@ -188,17 +139,12 @@ body <- dashboardBody(
 )
 
 
+
+
 ui <- dashboardPage(header, sidebar, body)
 
 
 server <- function(input, output, session){
-  
-  # map with phyloregions
-  output$map <- leaflet::renderLeaflet({
-    map <- leaflet() %>% 
-      addTiles()
-    map
-  })
   
   # reactive values to receive data 
   val <- reactiveValues()
@@ -206,42 +152,14 @@ server <- function(input, output, session){
   valuesMap <- reactiveValues()
   
   
-  
-  # Upload species file
-  observeEvent(!is.null(input$file.occ),{
-    req(input$file.occ)
-    
-    val$comm <- read.csv(input$file.occ$datapath, 
-                       sep = ",", encoding = "UTF-8", stringsAsFactors = F, header = TRUE)
-    comm <- as.data.frame(val$comm)
-    df <- val$comm
-    output$commDT <- DT::renderDataTable({comm})
-   
-  })
-  
   # Using example of species file
   observeEvent(input$ex_spp,{
     val$comm <- read.csv("www/comm_africa.csv", 
                          sep = ",", encoding = "UTF-8", stringsAsFactors = F, header = TRUE)
     
-    output$commDT <- DT::renderDataTable({val$comm})
+    comm <- val$comm 
+    output$commDT <- DT::renderDT({DT::datatable(comm)})
   })
-  
-  # Using uploaded file for phylogeny
-  observeEvent(input$file.phylo,{
-    values$phylo <- ape::read.tree(input$file.phylo$datapath)
-    phylo <- as.phylo(values$phylo)
-    type_phylo <- reactive({
-      input$phylo_type
-    })
-    output$phylo_plotly <- plotly::renderPlotly({
-      height <- session$clientData$output_p_height
-      width <- session$clientData$output_p_width
-      plot_interact(tree = phylo, 
-                    type = type_phylo(),
-                    tip.label = FALSE, height = height, width = width)})
-  }) 
-  
   
   # Using example phylogeny 
   observeEvent(input$ex_phylo,{
@@ -252,26 +170,9 @@ server <- function(input, output, session){
       width <- session$clientData$output_p_width
       plot_interact(tree = phylo, 
                     type = input$phylo_type,
-                    tip.label = FALSE, height = height, width = width)})
+                    tip.label = FALSE, height = height, width = width)}) # doesn't working for circular plots
   })
   
-  # Uploading spatial data
-  observeEvent(input$ex_shp,{
-    valuesMap$map <- rgdal::readOGR(dsn = "www/africa.shp")
-    map <- valuesMap$map
-    output$map_res <- renderLeaflet({
-      space_reproj <- 
-        map %>% 
-        st_as_sf() %>% 
-        st_transform(crs = "+init=epsg:4326")
-      leaflet() %>%
-        addTiles() %>% 
-        addPolygons(data = space_reproj, weight = 2, fillColor = "green", popup = TRUE)
-    })
-  })
-
-  
-     
 }
 
 

@@ -2,8 +2,7 @@
 
 plot_interact <- 
   function(tree,  height, width, type = "circular", tip.label = FALSE){
-    plot_tree <- ggtree::ggtree(tree, layout = type)
-    plot_tree <- ggtree::ggtree(tree, layout = "rectangular") +
+    plot_tree <- ggtree::ggtree(tree, layout = type) +
       theme_tree2()
     plot_tree %>% plotly::ggplotly(height = height, width = width)
 } 
