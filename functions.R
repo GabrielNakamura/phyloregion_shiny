@@ -6,3 +6,21 @@ plot_interact <-
       theme_tree2()
     plot_tree %>% plotly::ggplotly(height = height, width = width)
 } 
+
+# diversity calculation
+
+plot_div <-
+  function(comm, tree, type){
+    if(type == "PE"){
+      res <- phylo_endemism(comm, tree)
+    }
+    if(type == "WPE"){
+      res <- weighted_endemism(comm)
+    }
+    if(type == "PD"){
+      res <- PD(x = comm, phy = tree)
+    }
+    return(res)
+  }
+
+

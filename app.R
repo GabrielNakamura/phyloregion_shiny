@@ -116,7 +116,7 @@ body <- dashboardBody(
                      column(width = 5, 
                             box(width = NULL, title = "Ordination result",
                                 solidHeader = T,
-                                status = "success", plotOutput("NMDS_res"),
+                                status = "success",
                                 plotOutput("NMDS_res"),
                                 downloadButton("download_NMDS_res.png", "Download NMDS"),
                                 downloadButton("download_data_NMDS.csv", "Download NMDS data")
@@ -125,12 +125,16 @@ body <- dashboardBody(
                      column(width = 7, box(width = NULL, title = "Diversity patterns",
                                            solidHeader = T, status = "success",
                                            checkboxGroupButtons(
-                                             inputId = "grbox", label = "Choose a metric", 
+                                             inputId = "div_box", 
+                                             label = "Choose a metric", 
                                              choices = c("Phylo Diversity" = "PD",
                                                          "Phylo Endemism" = "PE",
                                                          "Weighted Endemism" = "WPE",
                                                          "EDGE" = "EDGE"),
-                                             justified = T, status = 'info', size = "xs", direction = "vertical",
+                                             justified = T,
+                                             status = 'info',
+                                             size = "xs",
+                                             direction = "vertical",
                                              checkIcon = list(yes = icon("ok", lib = "glyphicon"), no = icon("remove", lib = "glyphicon")),
                                              selected = c("PE"),
                                              width = "100%"
@@ -138,7 +142,9 @@ body <- dashboardBody(
                                            tabBox(
                                              side = "right", width = 8,
                                              selected = "PE",
-                                             tabPanel("PD", "Phylogenetic diversity"),
+                                             tabPanel("PD", "Phylogenetic diversity",
+                                                      plotOutput("plot_diversity")
+                                                      ),
                                              tabPanel("PE", "Phylogenetic endemism"),
                                              tabPanel("WE", "Weighted endemism"),
                                              tabPanel("EDGE", "EDGE")
@@ -210,7 +216,7 @@ server <- function(input, output, session){
       output$NMDS_res <-
         renderPlot({
           plot_NMDS(classification, cex = 3)
-          text(classification)
+          text_NMDS(classification)
         })
     }
     
@@ -221,6 +227,21 @@ server <- function(input, output, session){
       })
     }
   })
+  
+
+  # diversity metrics -------------------------------------------------------
+  
+ # observeEvent(input$div_box, {
+ #   values$div <- plot_div(comm = values$comm, tree = values$phylo, type = input$div_box)
+ #   M <- merge(values$africa_shp, data.frame(grids = names(values$div), pd = values$div), by = "grids")
+ #   M <- M[!is.na(M@data$pd),]
+ #   par(mar=rep(0,4))
+ #   output$plot_diversity <- 
+ #   renderPlot({
+ #     plot_swatch(M, values = M$pd, border=NA, leg=3,
+ #                 col = hcl.colors(n=20, palette = "Blue-Red 3", rev=FALSE))
+ #   })
+ # })
   
 }
 
